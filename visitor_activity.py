@@ -51,7 +51,12 @@ class VisitorActivity:
             recent=db.execute("SELECT COUNT(*) FROM site_events WHERE visitor_id=? AND kind='visit' AND created>?",(visitor_id,now-60)).fetchone()[0]
             if recent>=30:
                 raise ChatError('Please wait before refreshing again.',429)
-            cursor=db.execute("INSERT INTO site_events(visitor_id,kind,request_id,page,created) VALUES (?,'visit',?,?,?)",(visitor_id,request_id,page,now))
+            # only notify owner for the FIRST visit in 6h per visitor (no refresh spam)
+            notify = db.execute("SELECT COUNT(*) FROM site_events WHERE visitor_id=? AND kind='visit' AND created>?",(visitor_id,now-21600)).fetchone()[0] == 0
+            if notify:
+                cursor=db.execute("INSERT INTO site_events(visitor_id,kind,request_id,page,created) VALUES (?,'visit',?,?,?)",(visitor_id,request_id,page,now))
+            else:
+                cursor=db.execute("INSERT INTO site_events(visitor_id,kind,request_id,page,created,state) VALUES (?,'visit',?,?,?,'silent')",(visitor_id,request_id,page,now))
             db.execute('UPDATE chat_visitors SET last_seen=? WHERE id=?',(now,visitor_id))
             return {'recorded':True,'event_id':cursor.lastrowid}
 
