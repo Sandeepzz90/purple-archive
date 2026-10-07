@@ -2,5 +2,4 @@
 data/
 *.log
 __pycache__/
-models/*.onnx
 .env.local_backup
