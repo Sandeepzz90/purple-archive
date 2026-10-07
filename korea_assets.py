@@ -6,10 +6,14 @@ ROOT=Path(__file__).resolve().parent
 
 
 def catalog():
-    try:
-        return json.loads((ROOT/'data/korea_photos.json').read_text())
-    except (OSError,ValueError):
-        return []
+    for candidate in (ROOT/'data'/'korea_photos.json',):
+        try:
+            items=json.loads(candidate.read_text())
+            if items:
+                return items
+        except (OSError,ValueError):
+            continue
+    return []
 
 
 def public_catalog():
