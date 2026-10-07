@@ -68,7 +68,7 @@ class LocalSorter:
             try:
                 if not self.process or self.process.poll() is not None:
                     self.close()
-                    binary = os.getenv('LOCAL_FACE_PYTHON', '/usr/bin/python3')
+                    binary = os.getenv('LOCAL_FACE_PYTHON', sys.executable)
                     self.process = subprocess.Popen([binary, '-u', str(ROOT / 'local_face_worker.py')], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1)
                 self.process.stdin.write(json.dumps(request) + '\n')
                 self.process.stdin.flush()

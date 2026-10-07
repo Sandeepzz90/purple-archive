@@ -1,2 +1,4 @@
 requests>=2.31
 Pillow>=10
+opencv-python-headless
+numpy
