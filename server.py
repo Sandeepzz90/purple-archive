@@ -604,8 +604,15 @@ def approve_candidate(identity, approve):
         image.raise_for_status()
         target = DOWNLOAD / (identity + '.jpg')
         target.write_bytes(image.content)
-        add_media(target, identity, 'A little more than a photograph · freshly found', member, 'wikimedia')
-        return f'Added to {member} 💜 Live on the site now.'
+        add_media(target, identity, 'A little more than a photograph · freshly found', member, 'asiachan')
+        learned = 0
+        if member in MEMBERS:
+            try:
+                LOCAL_SORT.add_reference(target, member, identity)
+                learned = 1
+            except Exception:
+                pass
+        return f'Added to {member} 💜 Live on the profile now.' + (' Face learned 🧠' if learned else '')
     except Exception as error:
         return f'Download failed: {type(error).__name__}. Try again with /fetch.'
 
@@ -940,7 +947,7 @@ def auto_curator_loop():
             with database() as db:
                 known = {row[0] for row in db.execute('SELECT id FROM media').fetchall()}
             fresh = [c for c in candidates if c['id'] not in known]
-            added, learned, skipped = 0, 0, 0
+            sent, skipped = 0, 0
             for item in fresh:
                 try:
                     image = auto_curate.requests.get(item['url'], timeout=60)
@@ -949,26 +956,19 @@ def auto_curator_loop():
                     if 'image' not in content_type or len(image.content) < 15000:
                         skipped += 1
                         continue
-                    target = DOWNLOAD / (item['id'] + '.jpg')
-                    target.write_bytes(image.content)
-                    add_media(target, item['id'], 'A little more than a photograph · from the archive', item['member'], 'asiachan')
-                    added += 1
-                    # teach single-clear-face photos as references
-                    if item['member'] in MEMBERS:
-                        try:
-                            LOCAL_SORT.add_reference(target, item['member'], item['id'])
-                            learned += 1
-                        except Exception:
-                            pass  # not exactly one clear face — fine, it stays a gallery photo
+                    telegram('sendPhoto', chat_id=OWNER, photo=image.content,
+                             caption=f"🤖 Auto-curator · {member}\n{item['filename']}",
+                             reply_markup={'inline_keyboard': [[
+                                 {'text': '✅ Add', 'callback_data': 'fetchadd:' + item['id']},
+                                 {'text': '❌ Skip', 'callback_data': 'fetchskip:' + item['id']},
+                             ]]})
+                    with database() as db:
+                        db.execute('INSERT OR REPLACE INTO state VALUES (?,?)', ('cand:' + item['id'], item['member'] + '|' + item['url']))
+                    sent += 1
                 except Exception as error:
                     print(f'curate item failed: {type(error).__name__}', flush=True)
                     skipped += 1
-            if OWNER and (added or learned):
-                try:
-                    reply(OWNER, f'🤖 Auto-curator · {member}\nAdded: {added} photos to the profile\nLearned faces: {learned} new references\nSkipped: {skipped}')
-                except Exception:
-                    pass
-            print(f'auto-curator: {member} added={added} learned={learned} skipped={skipped}', flush=True)
+            print(f'auto-curator: {member} sent={sent} skipped={skipped}', flush=True)
         except Exception as error:
             print('auto-curator cycle failed:', type(error).__name__, flush=True)
         time.sleep(3600)

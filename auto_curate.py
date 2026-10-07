@@ -56,5 +56,5 @@ def fetch_batch(member, count=20):
 
 
 def random_member():
-    """Random pick — mostly individual members, sometimes group (mix)."""
-    return random.choice(['rm', 'jin', 'suga', 'jhope', 'jimin', 'v', 'jungkook', 'all'])
+    """Random individual member — never the group (profiles stay solo)."""
+    return random.choice(['rm', 'jin', 'suga', 'jhope', 'jimin', 'v', 'jungkook'])
