@@ -132,6 +132,7 @@ HELP = '''Purple Archive · owner-only controls 💜
 /member auto — sort by caption / filename (English or Korean)
 /member rm — send upcoming uploads to RM (also jin, suga, jhope, jimin, v, jungkook, all)
 /tag latest jimin — move your latest upload to a member
+/tag latest10 jimin — tag the last 10 uploads at once (any number up to 50)
 /tag FILE_ID rm,jin — put an upload in multiple profiles
 /recent — list your 10 latest uploads and their IDs
 /hide latest — hide your last upload (original kept locally)
@@ -494,11 +495,17 @@ def handle_command(chat, text, message=None, update_id=None):
         reply(chat, '\n\n'.join(f'{r["id"]}\n{r["title"][:60]} → {r["member"]}' for r in rows) or 'No uploads yet.')
     elif command in ('/tag', '/hide', '/show'):
         if not args or (command == '/tag' and len(args) != 2) or (command != '/tag' and len(args) != 1):
-            reply(chat, 'Use /tag latest jimin, /hide latest, or /show FILE_ID. Use /recent to see IDs.')
+            reply(chat, 'Use /tag latest jimin, /tag latest10 jimin (last 10 at once), /hide latest, or /show FILE_ID. Use /recent to see IDs.')
             return True
+        count = 1
+        target = args[0]
+        if target.startswith('latest') and target[6:].isdigit():
+            count = min(int(target[6:]), 50)
+            target = 'latest'
         with database() as db:
-            row = db.execute("SELECT id FROM media WHERE source='telegram' ORDER BY created DESC LIMIT 1").fetchone() if args[0] == 'latest' else db.execute("SELECT id FROM media WHERE id=? AND source='telegram'", (args[0],)).fetchone()
-        if not row:
+            rows = db.execute("SELECT id FROM media WHERE source='telegram' ORDER BY created DESC LIMIT ?", (count,)).fetchall() if target == 'latest' else [db.execute("SELECT id FROM media WHERE id=? AND source='telegram'", (target,)).fetchone()]
+        rows = [r for r in rows if r]
+        if not rows:
             reply(chat, 'Upload not found. Use /recent to see your upload IDs.')
         elif command == '/tag':
             tags = list(dict.fromkeys(args[1].split(',')))
@@ -506,11 +513,16 @@ def handle_command(chat, text, message=None, update_id=None):
                 reply(chat, 'Unknown member. Choose rm, jin, suga, jhope, jimin, v, jungkook or all.')
             else:
                 with database() as db:
-                    db.execute('UPDATE media SET member=? WHERE id=?', (','.join(tags), row['id']))
-                reply(chat, 'Updated 💜 This memory now appears in: ' + ', '.join(tags))
+                    for row in rows:
+                        db.execute('UPDATE media SET member=? WHERE id=?', (','.join(tags), row['id']))
+                if len(rows) == 1:
+                    reply(chat, 'Updated 💜 This memory now appears in: ' + ', '.join(tags))
+                else:
+                    reply(chat, f'Updated 💜 {len(rows)} memories now appear in: ' + ', '.join(tags))
         else:
-            set_setting('hidden:' + row['id'], 'on' if command == '/hide' else 'off')
-            reply(chat, 'Hidden from the site. Original kept in Download.' if command == '/hide' else 'Restored to the site 💜')
+            for row in rows:
+                set_setting('hidden:' + row['id'], 'on' if command == '/hide' else 'off')
+            reply(chat, (f'Hidden {len(rows)} from the site. Originals kept in Download.' if command == '/hide' else f'Restored {len(rows)} to the site 💜') if len(rows) > 1 else ('Hidden from the site. Original kept in Download.' if command == '/hide' else 'Restored to the site 💜'))
     else:
         reply(chat, 'Unknown command. Send /help for your private controls.')
     return True
@@ -1052,14 +1064,15 @@ if __name__ == '__main__':
     except Exception as error:
         print('seed skipped:', error, flush=True)
     try:
-        ref_file = DATA / 'face_references.json'
-        bundled = ROOT / 'data' / 'face_references.json'
-        if not ref_file.exists() and bundled.exists():
-            import shutil
-            shutil.copyfile(bundled, ref_file)
-            print('face references restored from bundle', flush=True)
+        import shutil
+        for name in ('korea_photos.json', 'face_references.json', 'local_sort_validation.json'):
+            bundled = ROOT / 'data' / name
+            target = DATA / name
+            if bundled.exists() and not target.exists():
+                shutil.copyfile(bundled, target)
+                print(f'{name} restored from bundle', flush=True)
     except Exception as error:
-        print('face reference restore skipped:', error, flush=True)
+        print('bundled data restore skipped:', error, flush=True)
     if not setting('local_sort_enabled') and LOCAL_SORT.status()['ready']:
         set_setting('local_sort_enabled','on')
     threading.Thread(target=upload_worker, daemon=True).start()
