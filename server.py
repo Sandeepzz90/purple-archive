@@ -561,21 +561,32 @@ def fetch_and_suggest(member, count):
     if not fresh:
         reply(OWNER, f'All found photos for {member} are already in the library 💜')
         return
+    sent = 0
     for item in fresh:
         try:
             image = fetch_photos.requests.get(item['url'], timeout=60)
             image.raise_for_status()
+            content_type = image.headers.get('content-type', '')
+            if 'image' not in content_type:
+                continue
+            if len(image.content) < 10000:  # skip tiny/broken images
+                continue
             telegram('sendPhoto', chat_id=OWNER, photo=image.content,
-                     caption=f"📸 Candidate for {member} · Wikimedia\nSource: {item['filename'][:60]}",
+                     caption=f"📸 Candidate for {member}\nSource: {item['filename'][:60]}",
                      reply_markup={'inline_keyboard': [[
                          {'text': '✅ Add to site', 'callback_data': 'fetchadd:' + item['id']},
                          {'text': '❌ Skip', 'callback_data': 'fetchskip:' + item['id']},
                      ]]})
             with database() as db:
                 db.execute('INSERT OR REPLACE INTO state VALUES (?,?)', ('cand:' + item['id'], member + '|' + item['url']))
-        except Exception:
+            sent += 1
+        except Exception as error:
+            print(f'fetch candidate failed: {item["url"][:80]} -> {type(error).__name__}', flush=True)
             continue
-    reply(OWNER, f'Sent {len(fresh)} candidates for {member}. Approve to publish 💜')
+    if sent:
+        reply(OWNER, f'Sent {sent} candidates for {member}. Approve to publish 💜')
+    else:
+        reply(OWNER, f'Found {len(fresh)} photos for {member} but none could be downloaded right now (sources busy). Try again in a minute, or /fetch another member.')
 
 
 def approve_candidate(identity, approve):
@@ -659,7 +670,18 @@ class TelegramError(Exception):
 
 def telegram(method, **params):
     try:
-        response = requests.post(f'https://api.telegram.org/bot{TOKEN}/{method}', json=params, timeout=45)
+        files = None
+        data = {}
+        for key, value in params.items():
+            if isinstance(value, bytes):
+                files = files or {}
+                files[key] = ('photo.jpg', value, 'image/jpeg')
+            else:
+                data[key] = value
+        if files:
+            response = requests.post(f'https://api.telegram.org/bot{TOKEN}/{method}', data=data, files=files, timeout=90)
+        else:
+            response = requests.post(f'https://api.telegram.org/bot{TOKEN}/{method}', json=params, timeout=45)
         result = response.json()
     except (requests.RequestException, ValueError):
         raise TelegramError('Telegram network unavailable') from None
