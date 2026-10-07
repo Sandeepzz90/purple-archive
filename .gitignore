@@ -1,0 +1,6 @@
+.env
+Download/
+data/
+*.log
+__pycache__/
+models/*.onnx
