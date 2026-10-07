@@ -52,8 +52,11 @@ def search(member, count=4):
             if filename in used:
                 continue
             used.add(filename)
-            # upscale thumbnails to a larger size for good quality
-            big = re.sub(r'/\d+px-', '/1024px-', source)
+            # thumb URLs can 400; use the ORIGINAL full-resolution file instead
+            # .../thumb/a/ab/File.jpg/640px-File.jpg -> .../a/ab/File.jpg
+            big = re.sub(r'/thumb/(\w/\w\w)/([^/]+)/\d+px-.*$', r'/\1/\2', source.split('?')[0])
+            if 'thumb.wikimedia.org' in big:
+                big = big.replace('thumb.wikimedia.org', 'upload.wikimedia.org')
             identity = 'cand-' + hashlib.sha256(filename.encode()).hexdigest()[:18]
             out.append({
                 'id': identity,
