@@ -929,6 +929,51 @@ def chat_worker():
             time.sleep(3)
 
 
+def auto_curator_loop():
+    """Every hour: fetch ~20 Asiachan photos for a random member (mix),
+    publish to the profile and teach single-face photos to the OpenCV engine."""
+    import auto_curate
+    while True:
+        try:
+            member = auto_curate.random_member()
+            candidates = auto_curate.fetch_batch(member, 20)
+            with database() as db:
+                known = {row[0] for row in db.execute('SELECT id FROM media').fetchall()}
+            fresh = [c for c in candidates if c['id'] not in known]
+            added, learned, skipped = 0, 0, 0
+            for item in fresh:
+                try:
+                    image = auto_curate.requests.get(item['url'], timeout=60)
+                    image.raise_for_status()
+                    content_type = image.headers.get('content-type', '')
+                    if 'image' not in content_type or len(image.content) < 15000:
+                        skipped += 1
+                        continue
+                    target = DOWNLOAD / (item['id'] + '.jpg')
+                    target.write_bytes(image.content)
+                    add_media(target, item['id'], 'A little more than a photograph · from the archive', item['member'], 'asiachan')
+                    added += 1
+                    # teach single-clear-face photos as references
+                    if item['member'] in MEMBERS:
+                        try:
+                            LOCAL_SORT.add_reference(target, item['member'], item['id'])
+                            learned += 1
+                        except Exception:
+                            pass  # not exactly one clear face — fine, it stays a gallery photo
+                except Exception as error:
+                    print(f'curate item failed: {type(error).__name__}', flush=True)
+                    skipped += 1
+            if OWNER and (added or learned):
+                try:
+                    reply(OWNER, f'🤖 Auto-curator · {member}\nAdded: {added} photos to the profile\nLearned faces: {learned} new references\nSkipped: {skipped}')
+                except Exception:
+                    pass
+            print(f'auto-curator: {member} added={added} learned={learned} skipped={skipped}', flush=True)
+        except Exception as error:
+            print('auto-curator cycle failed:', type(error).__name__, flush=True)
+        time.sleep(3600)
+
+
 def bot_loop():
     if not TOKEN or not OWNER:
         BOT_STATUS.update(message='Bot not configured')
@@ -1172,5 +1217,8 @@ if __name__ == '__main__':
     threading.Thread(target=progress_worker, daemon=True).start()
     threading.Thread(target=bot_loop, daemon=True).start()
     threading.Thread(target=chat_worker, daemon=True).start()
+    if setting('auto_curate', 'on') == 'on':
+        threading.Thread(target=auto_curator_loop, daemon=True).start()
+        print('auto-curator started: hourly Asiachan photos + face learning', flush=True)
     print('Purple Archive running at http://localhost:8000', flush=True)
     server.serve_forever()
