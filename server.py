@@ -134,6 +134,7 @@ HELP = '''Purple Archive · owner-only controls 💜
 /tag latest jimin — move your latest upload to a member
 /tag latest10 jimin — tag the last 10 uploads at once (any number up to 50)
 /tag FILE_ID rm,jin — put an upload in multiple profiles
+/fetch jimin — find good public photos and approve them here
 /recent — list your 10 latest uploads and their IDs
 /hide latest — hide your last upload (original kept locally)
 /show FILE_ID — restore a hidden upload
@@ -220,6 +221,12 @@ def owner_callback(query):
             owner_panel(data,message.get('message_id'))
         elif re.fullmatch(r'reply:PV-[A-F0-9]{10}',data):
             CHAT.reply_prompt(telegram,OWNER,data.split(':')[1])
+        elif data.startswith(('fetchadd:','fetchskip:')):
+            result = approve_candidate(data.split(':',1)[1], data.startswith('fetchadd'))
+            try:
+                telegram('editMessageCaption',chat_id=OWNER,message_id=message.get('message_id'),caption=(message.get('caption','') or '')[:180]+'\n\n→ '+result)
+            except TelegramError:
+                reply(OWNER, result)
     except (TelegramError,chat_service.ChatError,KeyError):
         pass
 
@@ -466,6 +473,15 @@ def handle_command(chat, text, message=None, update_id=None):
             reply(chat, 'Configure your vision provider with /api first, then /api on.')
         else:
             threading.Thread(target=rescan_pending, args=(chat,), daemon=True).start()
+    elif command == '/fetch':
+        if not args or args[0] not in ('all', *MEMBERS):
+            reply(chat, 'Use /fetch jimin (or rm, jin, suga, jhope, jimin, v, jungkook, all) — finds good-quality public photos and sends them for your approval.')
+        else:
+            member = args[0]
+            count = int(args[1]) if len(args) > 1 and args[1].isdigit() else 3
+            count = min(count, 6)
+            reply(chat, f'Searching fresh photos for {member}… 💜')
+            threading.Thread(target=fetch_and_suggest, args=(member, count), daemon=True).start()
     elif command == '/stats':
         reply(chat, gallery_stats())
     elif command == '/progress':
@@ -526,6 +542,61 @@ def handle_command(chat, text, message=None, update_id=None):
     else:
         reply(chat, 'Unknown command. Send /help for your private controls.')
     return True
+
+
+def fetch_and_suggest(member, count):
+    """Fetch candidate photos and send them to the owner with Approve buttons."""
+    try:
+        import fetch_photos
+        candidates = fetch_photos.search(member, count)
+    except Exception as error:
+        reply(OWNER, f'Photo search failed: {type(error).__name__}')
+        return
+    if not candidates:
+        reply(OWNER, f'No new photos found for {member} right now. Try again later or another member.')
+        return
+    with database() as db:
+        known = {row[0] for row in db.execute("SELECT id FROM media").fetchall()}
+    fresh = [c for c in candidates if c['id'] not in known]
+    if not fresh:
+        reply(OWNER, f'All found photos for {member} are already in the library 💜')
+        return
+    for item in fresh:
+        try:
+            image = fetch_photos.requests.get(item['url'], timeout=60)
+            image.raise_for_status()
+            telegram('sendPhoto', chat_id=OWNER, photo=image.content,
+                     caption=f"📸 Candidate for {member} · Wikimedia\nSource: {item['filename'][:60]}",
+                     reply_markup={'inline_keyboard': [[
+                         {'text': '✅ Add to site', 'callback_data': 'fetchadd:' + item['id']},
+                         {'text': '❌ Skip', 'callback_data': 'fetchskip:' + item['id']},
+                     ]]})
+            with database() as db:
+                db.execute('INSERT OR REPLACE INTO state VALUES (?,?)', ('cand:' + item['id'], member + '|' + item['url']))
+        except Exception:
+            continue
+    reply(OWNER, f'Sent {len(fresh)} candidates for {member}. Approve to publish 💜')
+
+
+def approve_candidate(identity, approve):
+    with database() as db:
+        row = db.execute('SELECT value FROM state WHERE key=?', ('cand:' + identity,)).fetchone()
+        db.execute('DELETE FROM state WHERE key=?', ('cand:' + identity,))
+    if not row:
+        return 'This candidate expired. Use /fetch again.'
+    member, url = row[0].split('|', 1)
+    if not approve:
+        return 'Skipped. Send /fetch member for more options.'
+    import fetch_photos
+    try:
+        image = fetch_photos.requests.get(url, timeout=60)
+        image.raise_for_status()
+        target = DOWNLOAD / (identity + '.jpg')
+        target.write_bytes(image.content)
+        add_media(target, identity, 'A little more than a photograph · freshly found', member, 'wikimedia')
+        return f'Added to {member} 💜 Live on the site now.'
+    except Exception as error:
+        return f'Download failed: {type(error).__name__}. Try again with /fetch.'
 
 
 def configure_surprise(action):
