@@ -1046,6 +1046,11 @@ if __name__ == '__main__':
         db.execute("UPDATE jobs SET status='queued' WHERE status='processing'")
         captions.migrate(db)
         image_quality.migrate(db,DOWNLOAD)
+    try:
+        import seed_railway
+        seed_railway.main()
+    except Exception as error:
+        print('seed skipped:', error, flush=True)
     if not setting('local_sort_enabled') and LOCAL_SORT.status()['ready']:
         set_setting('local_sort_enabled','on')
     threading.Thread(target=upload_worker, daemon=True).start()
