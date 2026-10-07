@@ -1,5 +1,5 @@
 .env
-data/
+data/gallery.sqlite
 *.log
 __pycache__/
 .env.local_backup

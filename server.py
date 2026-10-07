@@ -1051,6 +1051,15 @@ if __name__ == '__main__':
         seed_railway.main()
     except Exception as error:
         print('seed skipped:', error, flush=True)
+    try:
+        ref_file = DATA / 'face_references.json'
+        bundled = ROOT / 'data' / 'face_references.json'
+        if not ref_file.exists() and bundled.exists():
+            import shutil
+            shutil.copyfile(bundled, ref_file)
+            print('face references restored from bundle', flush=True)
+    except Exception as error:
+        print('face reference restore skipped:', error, flush=True)
     if not setting('local_sort_enabled') and LOCAL_SORT.status()['ready']:
         set_setting('local_sort_enabled','on')
     threading.Thread(target=upload_worker, daemon=True).start()
