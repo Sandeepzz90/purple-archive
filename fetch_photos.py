@@ -26,6 +26,43 @@ PAGES = {
     'jungkook': ('Jungkook', 'Jungkook BTS'),
 }
 
+# Asiachan KPOP image board tags (high-quality fan photos)
+ASIACHAN_TAGS = {
+    'all': 'BTS', 'rm': 'Namjoon', 'jin': 'Jin', 'suga': 'SUGA',
+    'jhope': 'Jhope', 'jimin': 'Jimin', 'v': 'V', 'jungkook': 'Jungkook',
+}
+
+ASIACHAN_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml',
+    'Referer': 'https://kpop.asiachan.com/',
+}
+
+
+def _asiachan(member, count):
+    """Scrape Asiachan KPOP board — high-quality fan photos."""
+    out = []
+    tag = ASIACHAN_TAGS.get(member)
+    if not tag:
+        return out
+    try:
+        page = random.randint(1, 25)
+        r = requests.get(f'https://kpop.asiachan.com/{tag}?p={page}', headers=ASIACHAN_HEADERS, timeout=30)
+        if not r.ok:
+            return out
+        ids = sorted(set(re.findall(r'static\.asiachan\.com/[^"\s]+?\.full\.(\d+)\.jpg', r.text)))
+        random.shuffle(ids)
+        for image_id in ids[:count * 2]:
+            url = f'https://static.asiachan.com/{tag}.full.{image_id}.jpg'
+            identity = 'asian-' + hashlib.sha256(url.encode()).hexdigest()[:18]
+            out.append({
+                'id': identity, 'url': url, 'member': '',
+                'filename': f'asiachan #{image_id}', 'credit': 'https://kpop.asiachan.com/',
+            })
+    except Exception:
+        pass
+    return out
+
 QUERIES = [
     '{name}', '{name} photoshoot', '{name} concert',
     '{name} 2023', '{name} airport fashion', '{name} behind the scenes',
@@ -105,12 +142,13 @@ def _wikipedia(page, count):
 
 
 def search(member, count=4):
-    """Return up to `count` shuffled candidates from across the internet."""
+    """Return up to `count` shuffled candidates — Asiachan first (HQ fan photos),
+    then Openverse (internet CC), Wikipedia fallback."""
     page, name = PAGES.get(member, ('BTS', member))
-    candidates = []
+    candidates = _asiachan(member, count)
     queries = [q.format(name=name) for q in QUERIES]
     random.shuffle(queries)
-    for q in queries[:3]:
+    for q in queries[:2]:
         candidates.extend(_openverse(q, count))
         if len(candidates) >= count * 4:
             break
