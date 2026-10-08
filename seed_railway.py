@@ -14,9 +14,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import image_quality  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent
-DOWNLOAD = ROOT / 'Download'
-DATA = ROOT / 'data'
+import server  # reuse the volume-aware paths
+ROOT = server.ROOT
+DOWNLOAD = server.DOWNLOAD
+DATA = server.DATA
 DATA.mkdir(exist_ok=True)
 MEMBERS = ['rm', 'jin', 'suga', 'jhope', 'jimin', 'v', 'jungkook']
 PER_MEMBER = 5
