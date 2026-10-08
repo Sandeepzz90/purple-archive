@@ -1100,7 +1100,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.json_response({'photos':korea_assets.public_catalog()},head)
         if path == '/api/media-debug':
             import os as _os
-            return self.json_response({'download': str(DOWNLOAD), 'files': len(list(DOWNLOAD.glob('*.jpg'))) if DOWNLOAD.exists() else -1, 'media_dir_env': _os.getenv('MEDIA_DIR','')}, head)
+            return self.json_response({'download': str(DOWNLOAD), 'files': len(list(DOWNLOAD.glob('*.jpg'))) if DOWNLOAD.exists() else -1, 'media_dir_env': _os.getenv('MEDIA_DIR',''), 'repo_download': len(list((ROOT / 'Download').glob('*.jpg'))), 'repo_download_exists': (ROOT / 'Download').exists()}, head)
         if path == '/api/settings':
             context=personal_birthday.context(setting('surprise_mode','auto'),setting('surprise_preview_date'))
             context['recipient']=birthday_names.current(setting)
