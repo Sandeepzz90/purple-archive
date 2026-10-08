@@ -14,10 +14,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import image_quality  # noqa: E402
 
-import server  # reuse the volume-aware paths
-ROOT = server.ROOT
-DOWNLOAD = server.DOWNLOAD
-DATA = server.DATA
+import os as _os
+from pathlib import Path as _Path
+ROOT = _Path(__file__).resolve().parent
+MEDIA_DIR = _os.getenv('MEDIA_DIR', '')
+DOWNLOAD = _Path(MEDIA_DIR) if MEDIA_DIR and _Path(MEDIA_DIR).exists() else (ROOT / 'Download')
+DATA = ROOT / 'data'
 DATA.mkdir(exist_ok=True)
 MEMBERS = ['rm', 'jin', 'suga', 'jhope', 'jimin', 'v', 'jungkook']
 PER_MEMBER = 5
