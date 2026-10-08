@@ -10,7 +10,7 @@ function birthdayInfo(now=new Date()){
  return members.map(m=>{const [day,month,year]=m.birth.split(' '),monthIndex=birthMonths.indexOf(month);let next=Date.UTC(current.year,monthIndex,Number(day));if(next<today)next=Date.UTC(current.year+1,monthIndex,Number(day));return {...m,days:Math.round((next-today)/86400000),turning:new Date(next).getUTCFullYear()-Number(year),nextYear:new Date(next).getUTCFullYear()};}).sort((a,b)=>a.days-b.days);
 }
 function freshPhotos(){const images=media.filter(m=>m.kind==='image'&&m.category!=='sticker');const personal=images.filter(m=>!m.id.startsWith('seed-')&&!m.id.startsWith('extra-'));return personal.length?personal:images;}
-function noteBox(){return settings.noteEnabled?'<a class="top-note" href="/korea#sorry-gift"><span class="note-icon">🫰</span><span><strong>I’m really sorry.</strong><small lang="ko">정말 미안해.</small></span><span class="note-arrow">↗</span></a>':'';}
+function noteBox(){return settings.noteEnabled?'<a class="top-note" href="/sorry"><span class="note-icon">🫰</span><span><strong>I’m really sorry.</strong><small lang="ko">정말 미안해.</small></span><span class="note-arrow">↗</span></a>':'';}
 function syncNoteBox(){if(path!=='/')return;let slot=document.querySelector('#top-note-slot');if(!slot){slot=document.createElement('div');slot.id='top-note-slot';main.querySelector('.container')?.prepend(slot);}slot.innerHTML=noteBox();}
 function sectionHeading(kicker,title,description='',link=''){return `<div class="section-heading"><div><div class="eyebrow">${kicker}</div><h2>${title}</h2></div>${link||`<p>${description}</p>`}</div>`;}
 function memoryWall(items){return `<div class="memory-wall">${items.map((m,i)=>`<div class="wall-cell wall-${i}">${memoryCard(m)}</div>`).join('')}</div>`;}

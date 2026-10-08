@@ -1130,6 +1130,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(ROOT / 'site.html', head, private=True)
         if path in ('/', '/world', '/world/') or path.rstrip('/') in READING_PAGES or path.rstrip('/') in {'/music/'+slug for slug in RELEASE_SLUGS} or re.fullmatch(r'/members/(rm|jin|suga|jhope|jimin|v|jungkook)/?', path):
             return self.file(ROOT / 'site.html', head)
+        if path == '/favicon.svg':
+            return self.file(ROOT / 'favicon.svg', head, cached=True, mime='image/svg+xml')
         if path in ('/design.css', '/experience.js', '/rooms.css', '/rooms.js', '/magic.css', '/magic.js', '/community.css', '/community.js', '/journey.css', '/journey.js', '/natural.css', '/natural.js', '/surprise.css', '/surprise.js', '/korea.css', '/korea.js', '/visitor.js', '/recipient.js', '/lottie.min.js'):
             return self.file(ROOT / path[1:], head)
         if path.startswith('/Download/'):
