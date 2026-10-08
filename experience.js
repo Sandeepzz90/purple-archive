@@ -21,7 +21,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const local=name=>'/Download/'+encodeURIComponent(name);
 const hasMember=(item,id)=>(item.members||item.member.split(',')).includes(id);
 const memberName=id=>members.find(m=>m.id===id)?.name||'OT7';
-const memberPhotos=id=>media.filter(m=>m.kind==='image'&&hasMember(m,id)&&!(m.members||m.member.split(',')).includes('all'));
+const memberPhotos=id=>media.filter(m=>m.kind==='image'&&hasMember(m,id)&&(id==='all'||!(m.members||m.member.split(',')).includes('all')));
 const photoFor=(id,offset=0)=>photoChoice(id,offset);
 function photo(item,alt='',lazy=true){return naturalPhoto(item,alt,lazy);}
 function frame(item,cls,caption,style=''){return `<div class="photo-frame ${cls}" ${style?`style="${style}"`:''}><span class="tape" aria-hidden="true"></span><button ${item?`data-media="${esc(item.id)}"`:''} aria-label="Open ${esc(caption)}">${photo(item,caption,false)}</button><span class="caption">${esc(caption)}</span></div>`;}
