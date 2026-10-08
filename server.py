@@ -33,6 +33,23 @@ ROOT = Path(__file__).resolve().parent
 # Media store: on Railway keep uploads on the persistent volume so redeployments keep them
 MEDIA_STORE = Path(os.getenv('MEDIA_DIR', '')) if os.getenv('MEDIA_DIR') else None
 DOWNLOAD = MEDIA_STORE if (MEDIA_STORE and MEDIA_STORE.exists()) else (ROOT / 'Download')
+# one-time: copy repo-bundled photos into the persistent media store (no-clobber, keeps uploads)
+if MEDIA_STORE is not None and MEDIA_STORE != (ROOT / 'Download'):
+    MEDIA_STORE.mkdir(parents=True, exist_ok=True)
+    import shutil as _shutil
+    _copied = 0
+    _bundled = ROOT / 'Download'
+    if _bundled.exists():
+        for _src in _bundled.iterdir():
+            _dst = MEDIA_STORE / _src.name
+            if _src.is_file() and not _dst.exists():
+                try:
+                    _shutil.copy2(_src, _dst)
+                    _copied += 1
+                except OSError:
+                    pass
+    if _copied:
+        print(f'media store: copied {_copied} bundled files', flush=True)
 DATA = ROOT / 'data'
 for directory in (DOWNLOAD, DATA):
     directory.mkdir(exist_ok=True)
