@@ -1202,6 +1202,16 @@ if __name__ == '__main__':
     except Exception as error:
         print('seed skipped:', error, flush=True)
     try:
+        with database() as db:
+            orphans = [row['id'] for row in db.execute('SELECT id, filename FROM media').fetchall()
+                       if not (DOWNLOAD / row['filename']).exists()]
+        if orphans:
+            with database() as db:
+                db.executemany('DELETE FROM media WHERE id=?', [(i,) for i in orphans])
+            print(f'scrubbed {len(orphans)} media records with missing files', flush=True)
+    except Exception as error:
+        print('scrub skipped:', error, flush=True)
+    try:
         import shutil
         for name in ('korea_photos.json', 'face_references.json', 'local_sort_validation.json'):
             bundled = ROOT / 'data' / name

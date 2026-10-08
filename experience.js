@@ -89,6 +89,13 @@ function renderProfileGallery(id){const gallery=document.querySelector('#profile
 async function note(){
  await renderDirectNote();
 }
+function renderInstantFromCache(){
+ // paint the page immediately with cached media while fresh data loads
+ try{
+  const personalBirthday=shouldRenderPersonalBirthday();
+  if(personalBirthday)renderPersonalBirthday();else if(path==='/world')world();else if(path.startsWith('/members/'))profile(path.split('/')[2]);else if(!renderJourneyPage(path))renderCleanHome();
+ }catch{}
+}
 function notFound(){document.title='Page not found';main.innerHTML='<div class="loading"><h1>This page isn’t here.</h1><p>Your purple place is one click away.</p><a class="button" href="/">Back home ↗</a></div>';}
 async function updateSettings(){try{const response=await fetchTimed('/api/settings',{cache:'no-store'});if(!response.ok)return;settings=await response.json();setBirthdayRecipient(settings.personalBirthday?.recipient);document.querySelector('#note-link').innerHTML=settings.noteEnabled?'<a href="/korea#sorry-gift">I’m really sorry · 정말 미안해 ↗</a>':'';syncNoteBox();syncPersonalBirthdayUI();if(path==='/sorry'&&!settings.noteEnabled&&!document.querySelector('.one-time-note-content'))notFound();}catch{}}
 let refreshBusy=false;
@@ -100,7 +107,11 @@ async function load(){
   const configuration=updateSettings();
   if(path==='/sorry'){await configuration;if(settings.noteEnabled)await note();else notFound();finishArrival();setInterval(refresh,10000);return;}
   if(path==='/chat'||path==='/korea'){await configuration;if(path==='/chat')renderPrivateChatPage();else await renderKoreanWorld();enhancePage();finishArrival();let target=location.hash.slice(1);try{target=decodeURIComponent(target);}catch{}if(target)document.getElementById(target)?.scrollIntoView();setInterval(refresh,10000);return;}
- try{const r=await fetchTimed('/api/media');if(!r.ok)throw new Error();const incoming=(await r.json()).media;lastSignature=JSON.stringify(incoming);media=shuffleForVisit(incoming);await configuration;arrivalStage('Finding a fresh arrangement, just for this visit…');}catch{await configuration;if(shouldRenderPersonalBirthday()){renderPersonalBirthday();finishArrival();openBirthdayGate();setInterval(refresh,10000);return;}main.innerHTML='<div class="loading"><h1>Your world is taking a little moment.</h1><p>Please refresh and try again.</p><button class="button" id="retry">Try again ↻</button></div>';document.querySelector('#retry').onclick=()=>location.reload();finishArrival();return;}
+ try{
+   // instant render from cache, then refresh in background
+   const cached = (()=>{try{return JSON.parse(localStorage.getItem('purple-media')||'null')}catch{return null}})();
+   if(cached && cached.length){media=shuffleForVisit(cached);lastSignature=JSON.stringify(cached);renderInstantFromCache();}
+   const r=await fetchTimed('/api/media');if(!r.ok)throw new Error();const incoming=(await r.json()).media;lastSignature=JSON.stringify(incoming);media=shuffleForVisit(incoming);try{localStorage.setItem('purple-media',JSON.stringify(incoming))}catch{};await configuration;arrivalStage('Finding a fresh arrangement, just for this visit…');}catch{await configuration;if(shouldRenderPersonalBirthday()){renderPersonalBirthday();finishArrival();openBirthdayGate();setInterval(refresh,10000);return;}main.innerHTML='<div class="loading"><h1>Your world is taking a little moment.</h1><p>Please refresh and try again.</p><button class="button" id="retry">Try again ↻</button></div>';document.querySelector('#retry').onclick=()=>location.reload();finishArrival();return;}
  const personalBirthday=shouldRenderPersonalBirthday();
  if(personalBirthday)renderPersonalBirthday();else if(path==='/korea')await renderKoreanWorld();else if(path==='/chat')renderPrivateChatPage();else if(path==='/world')world();else if(path.startsWith('/members/'))profile(path.split('/')[2]);else if(!renderJourneyPage(path))renderCleanHome();
  if(!personalBirthday)enhancePage();
