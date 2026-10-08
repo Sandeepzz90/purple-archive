@@ -30,7 +30,9 @@ import korea_assets
 from local_sort import LocalSorter, LocalSortError
 
 ROOT = Path(__file__).resolve().parent
-DOWNLOAD = ROOT / 'Download'
+# Media store: on Railway keep uploads on the persistent volume so redeployments keep them
+MEDIA_STORE = Path(os.getenv('MEDIA_DIR', '')) if os.getenv('MEDIA_DIR') else None
+DOWNLOAD = MEDIA_STORE if (MEDIA_STORE and MEDIA_STORE.exists()) else (ROOT / 'Download')
 DATA = ROOT / 'data'
 for directory in (DOWNLOAD, DATA):
     directory.mkdir(exist_ok=True)
