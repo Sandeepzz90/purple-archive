@@ -1,7 +1,7 @@
 /* Shivani's birthday: a scratch-card invitation into a Korean world. */
 const personalParty={sound:false,audio:null,blown:false,popped:new Set(),gateTimers:[],gateRun:0,gateStage:'invite',scratchRevealed:false,scratchObserver:null};
 const partyColors=['#ff705d','#ffd45b','#74d8c2','#69aaf5','#f69ac4','#a58af0'];
-function personalBirthdayContext(){return settings.personalBirthday||{active:false,occasion:'none',eventDate:new Date().getFullYear()+'-10-10',today:localDay(),timezoneLabel:'IST'};}
+function personalBirthdayContext(){return settings.personalBirthday||{active:false,occasion:'none',eventDate:new Date().getFullYear()+'-10-12',today:localDay(),timezoneLabel:'IST'};}
 function shouldRenderPersonalBirthday(){return path==='/surprise'||(path==='/'&&personalBirthdayContext().active&&!new URLSearchParams(location.search).has('home'));}
 function partyPreview(){return personalBirthdayContext().occasion!=='birthday';}
 function partySessionKey(){return recipientStorageKey('birthday-opening-seen');}
@@ -30,7 +30,7 @@ function setupBirthdayScratch(){
 }
 function revealScratchWish(){if(personalParty.scratchRevealed)return;personalParty.scratchRevealed=true;document.querySelector('.birthday-scratch-card')?.classList.add('is-revealed');personalParty.scratchObserver?.disconnect();unlockKoreaGift(true);}
 function syncPersonalBirthdayUI(){
- const context=personalBirthdayContext(),label=document.querySelector('#party-preview-label');if(label)label.textContent=partyPreview()?'Preview mode · Shivani’s birthday celebration activates on 10 October, IST.':'';
+ const context=personalBirthdayContext(),label=document.querySelector('#party-preview-label');if(label)label.textContent=partyPreview()?'Preview mode · Shivani’s birthday celebration activates on 12 October, IST.':'';
  const ribbon=document.querySelector('#personal-birthday-ribbon');if(context.active&&!document.body.classList.contains('personal-birthday')&&path!=='/sorry'){if(!ribbon){const link=document.createElement('a');link.id='personal-birthday-ribbon';link.className='personal-birthday-ribbon';link.href='/surprise';link.textContent='🫰 Shivani’s birthday world · 시바니의 생일 여행 ↗';document.querySelector('.site-header').after(link);}}else ribbon?.remove();
   syncKoreanGift();
   applyBirthdayRecipient();
@@ -44,7 +44,7 @@ function openBirthdayGate(force=false){
  const query=new URL(location.href);if(query.searchParams.get('replay')==='1'){force=true;query.searchParams.delete('replay');history.replaceState(null,'',query.pathname+query.search+query.hash);}
  if(!force&&hasSeenBirthdayOpening())return;
  clearTimeout(arrivalTimer);document.querySelector('.arrival')?.remove();clearBirthdayGateTimers();personalParty.popped.clear();
- let gate=document.querySelector('#birthday-gate');if(!gate){gate=document.createElement('dialog');gate.id='birthday-gate';gate.setAttribute('aria-labelledby','birthday-gate-title');gate.innerHTML='<div class="gate-topbar"><span>FOR SHIVANI · 시바니에게 <b>10 / 10</b></span><div><button type="button" data-party-sound aria-pressed="false">Sound off ♫</button><button type="button" id="skip-birthday-gate">Skip to your gift ↗</button></div></div><div class="gate-sky" aria-hidden="true"><i>✳</i><i>✦</i><i>♡</i><i>✳</i><i>✦</i><i>✺</i></div><div id="birthday-gate-stage"></div><div class="gate-footer">HAPPY BIRTHDAY SHIVANI · 시바니, 생일 축하해!</div>';document.body.append(gate);bindPartySound(gate);gate.querySelector('#skip-birthday-gate').onclick=()=>closeBirthdayGate(false);gate.addEventListener('cancel',event=>{event.preventDefault();closeBirthdayGate(false);});}
+ let gate=document.querySelector('#birthday-gate');if(!gate){gate=document.createElement('dialog');gate.id='birthday-gate';gate.setAttribute('aria-labelledby','birthday-gate-title');gate.innerHTML='<div class="gate-topbar"><span>FOR SHIVANI · 시바니에게 <b>12 / 12</b></span><div><button type="button" data-party-sound aria-pressed="false">Sound off ♫</button><button type="button" id="skip-birthday-gate">Skip to your gift ↗</button></div></div><div class="gate-sky" aria-hidden="true"><i>✳</i><i>✦</i><i>♡</i><i>✳</i><i>✦</i><i>✺</i></div><div id="birthday-gate-stage"></div><div class="gate-footer">HAPPY BIRTHDAY SHIVANI · 시바니, 생일 축하해!</div>';document.body.append(gate);bindPartySound(gate);gate.querySelector('#skip-birthday-gate').onclick=()=>closeBirthdayGate(false);gate.addEventListener('cancel',event=>{event.preventDefault();closeBirthdayGate(false);});}
   renderGateStage('invite');applyBirthdayRecipient(gate);if(!gate.open)gate.showModal();gate.querySelector('#unwrap-birthday').focus({preventScroll:true});
 }
 function renderGateStage(stage){const gate=document.querySelector('#birthday-gate'),root=document.querySelector('#birthday-gate-stage');if(!root)return;personalParty.gateStage=stage;gate.dataset.stage=stage;

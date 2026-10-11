@@ -1,0 +1,19 @@
+/* Party extras: countdown bar, fireworks, love-letter card (Oct 12). */
+#birthday-countdown{position:fixed;bottom:0;left:0;right:0;z-index:900;text-align:center;
+ padding:10px 12px 14px;background:linear-gradient(to top,#1b1030f2,#1b103000);
+ color:#e8d9ff;pointer-events:none;font-family:inherit}
+#birthday-countdown .cd-kicker{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#b79adf;margin-bottom:4px}
+#birthday-countdown .cd-clock{font:700 clamp(20px,5vw,34px)/1.15 ui-monospace,monospace;color:#f2e6ff;
+ text-shadow:0 0 18px #cfa7f680}
+#birthday-countdown .cd-sub{font-size:11px;color:#a68fc9;margin-top:3px}
+@media(prefers-reduced-motion:reduce){#birthday-countdown{display:none}}
+/* love-letter lucky card */
+.lucky-letter{max-width:520px;margin:26px auto;padding:26px 24px;border-radius:18px;
+ background:linear-gradient(150deg,#3a2260,#241543);border:1px solid #c6a0ef45;text-align:center}
+.lucky-letter .ll-h{font:italic 700 24px 'Playfair Display',Georgia,serif;color:#e6c8ff;margin:0 0 14px}
+.lucky-letter ul{list-style:none;margin:0;padding:0;color:#d8c8ea;font-size:14px;line-height:2}
+.lucky-letter li{margin:6px 0}
+.lucky-letter li::before{content:'♡ ';color:#d5a8ff}
+.lucky-btn{margin-top:6px;border:1px solid #dec2ff70;border-radius:100px;background:#cfa7f6;
+ color:#2c163e;cursor:pointer;padding:12px 24px;font-size:12px;font-weight:700;transition:transform .2s}
+.lucky-btn:hover{transform:translateY(-2px);background:#dfc2fc}

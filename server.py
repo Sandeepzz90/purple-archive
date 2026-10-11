@@ -140,8 +140,8 @@ HELP = '''Purple Archive · owner-only controls 💜
 /panel — your button-based control room
 /name Name — set the birthday person (girl or boy)
 /name Name | Korean spelling — optional Korean name
-/surprise today — preview the October 10 celebration today
-/surprise auto — October 10 only (ends the temporary preview)
+/surprise today — preview the October 12 celebration today
+/surprise auto — October 12 only (ends the temporary preview)
 /surprise off — disable the automatic personal celebration
 /chats — recent private website conversations
 /chat ID your message — reply only to that visitor
@@ -187,7 +187,7 @@ def owner_panel(view='home', message_id=None):
     keyboard = [[{'text': '💬 Conversations', 'callback_data': 'panel:chats'}, {'text': '▦ Library & queue', 'callback_data': 'panel:stats'}],
                 [{'text': ('♡ Note is ON · hide' if note_on else '♡ Note is OFF · show'), 'callback_data': 'note:' + ('off' if note_on else 'on')}, {'text': '✦ Upload guide', 'callback_data': 'panel:upload'}],
                 [{'text': '◉ Local image matching', 'callback_data': 'panel:local'}, {'text': '⚙ Optional vision API', 'callback_data': 'panel:vision'}],
-                [{'text': '🎂 October 10 surprise', 'callback_data': 'panel:surprise'}, {'text': '☰ All commands', 'callback_data': 'panel:cmds'}]]
+                [{'text': '🎂 October 12 surprise', 'callback_data': 'panel:surprise'}, {'text': '☰ All commands', 'callback_data': 'panel:cmds'}]]
     title='✦ PURPLE CONTROL ROOM'
     text=f'<b>{title}</b>\n<i>Your private corner behind the scenes.</i>\n\nChoose a room below. Every control here is owner-only.\n\n<b>Quick reply</b>\n<code>/chat PV-ID your message</code>'
     if view=='chats':
@@ -206,7 +206,7 @@ def owner_panel(view='home', message_id=None):
     elif view=='surprise':
         context = personal_birthday.context(setting('surprise_mode','auto'),setting('surprise_preview_date'))
         recipient=birthday_names.current(setting)
-        text='<b>🎂 '+html.escape(recipient['name'])+' · '+html.escape(recipient['koreanName'])+'</b>\n\nAutomatic date: <b>10 October · midnight IST</b>\nToday: '+html.escape(context['today'])+'\nCurrent display: '+html.escape(context['occasion'])+'\n\nChange name: <code>/name Name</code>\nPreview: http://localhost:8000/surprise\nKorean world: http://localhost:8000/korea\n\nThe opening plays once per browser, then only on Replay. /sorry on prepares the one-time Korean note gift; it hides after opening and sends you the visitor ID.'
+        text='<b>🎂 '+html.escape(recipient['name'])+' · '+html.escape(recipient['koreanName'])+'</b>\n\nAutomatic date: <b>12 October · midnight IST</b>\nToday: '+html.escape(context['today'])+'\nCurrent display: '+html.escape(context['occasion'])+'\n\nChange name: <code>/name Name</code>\nPreview: http://localhost:8000/surprise\nKorean world: http://localhost:8000/korea\n\nThe opening plays once per browser, then only on Replay. /sorry on prepares the one-time Korean note gift; it hides after opening and sends you the visitor ID.'
         keyboard=[[{'text':'✦ Preview today','callback_data':'surprise:today'},{'text':'10 Oct only','callback_data':'surprise:auto'}],[{'text':'Disable automatic surprise','callback_data':'surprise:off'},{'text':'← Control room','callback_data':'panel:home'}]]
     elif view=='cmds':
         text='<b>☰ OWNER COMMANDS</b>\n\n'+html.escape(HELP)
@@ -454,7 +454,7 @@ def handle_command(chat, text, message=None, update_id=None):
         try:
             owner_panel('surprise')
         except TelegramError:
-            reply(chat,'Use /surprise today, /surprise auto or /surprise off. Preview anytime at http://localhost:8000/surprise. The automatic date is 10 October in IST.')
+            reply(chat,'Use /surprise today, /surprise auto or /surprise off. Preview anytime at http://localhost:8000/surprise. The automatic date is 12 October in IST.')
     elif command == '/local':
         if args in (['on'],['off']):
             if args==['on'] and not LOCAL_SORT.status()['ready']:
@@ -1007,7 +1007,7 @@ def bot_loop():
             BOT_STATUS.update(connected=True, username=me['username'], message='Ready for uploads')
             try:
                 telegram('deleteMyCommands', scope={'type': 'default'})
-                telegram('setMyCommands', scope={'type': 'chat', 'chat_id': OWNER}, commands=[{'command': name, 'description': description} for name, description in [('panel','Your private control room'),('cmds','All owner-only commands'),('name','Name — birthday person’s display name'),('surprise','today, auto or off — October 10 celebration'),('chats','Recent private website conversations'),('chat','ID message — reply privately to a visitor'),('chatlog','ID — view recent conversation history'),('sorry','on or off — control the note'),('member','auto or a member name — choose upload album'),('local','Offline OpenCV image matching'),('learn','latest MEMBER — teach a reference face'),('api','Optional external vision API'),('sort','local or pending — classify earlier photos'),('stats','Total files and upload counts'),('progress','Update the batch progress message'),('tag','latest jimin — change an upload album'),('recent','Your latest upload IDs'),('hide','latest — hide an upload'),('show','FILE_ID — restore an upload'),('status','Current settings')]])
+                telegram('setMyCommands', scope={'type': 'chat', 'chat_id': OWNER}, commands=[{'command': name, 'description': description} for name, description in [('panel','Your private control room'),('cmds','All owner-only commands'),('name','Name — birthday person’s display name'),('surprise','today, auto or off — October 12 celebration'),('chats','Recent private website conversations'),('chat','ID message — reply privately to a visitor'),('chatlog','ID — view recent conversation history'),('sorry','on or off — control the note'),('member','auto or a member name — choose upload album'),('local','Offline OpenCV image matching'),('learn','latest MEMBER — teach a reference face'),('api','Optional external vision API'),('sort','local or pending — classify earlier photos'),('stats','Total files and upload counts'),('progress','Update the batch progress message'),('tag','latest jimin — change an upload album'),('recent','Your latest upload IDs'),('hide','latest — hide an upload'),('show','FILE_ID — restore an upload'),('status','Current settings')]])
             except TelegramError:
                 pass
             with database() as db:
@@ -1132,7 +1132,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.file(ROOT / 'site.html', head)
         if path == '/favicon.svg':
             return self.file(ROOT / 'favicon.svg', head, cached=True, mime='image/svg+xml')
-        if path in ('/design.css', '/experience.js', '/rooms.css', '/rooms.js', '/magic.css', '/magic.js', '/community.css', '/community.js', '/journey.css', '/journey.js', '/natural.css', '/natural.js', '/surprise.css', '/surprise.js', '/korea.css', '/korea.js', '/visitor.js', '/recipient.js', '/lottie.min.js'):
+        if path in ('/design.css', '/experience.js', '/rooms.css', '/rooms.js', '/magic.css', '/magic.js', '/community.css', '/community.js', '/journey.css', '/journey.js', '/natural.css', '/natural.js', '/surprise.css', '/surprise.js', '/korea.css', '/korea.js', '/party.css', '/party.js', '/visitor.js', '/recipient.js', '/lottie.min.js'):
             return self.file(ROOT / path[1:], head)
         if path.startswith('/Download/'):
             name = path.removeprefix('/Download/')
